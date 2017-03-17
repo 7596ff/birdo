@@ -15,5 +15,10 @@
   "bugs": {
     "url": "https://github.com/bippum/birdo/issues"
   },
-  "homepage": "https://github.com/bippum/birdo#readme"
+  "homepage": "https://github.com/bippum/birdo#readme",
+  "dependencies": {
+    "dota2": "^4.2.1",
+    "eris": "^0.6.0",
+    "steam": "^1.4.0"
+  }
 }
