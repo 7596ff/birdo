@@ -6,7 +6,7 @@ const Steam = require("steam");
 const Dota2 = require("dota2");
 
 class Bridge extends EventEmitter {
-    constructor(options) {
+    constructor(options, extraDebug) {
         super();
 
         this.username = options.username;
@@ -24,7 +24,7 @@ class Bridge extends EventEmitter {
         this.steamClient = new Steam.SteamClient();
         this.steamUser = new Steam.SteamUser(this.steamClient);
         this.steamFriends = new Steam.SteamFriends(this.steamClient);
-        this.dota2 = new Dota2.Dota2Client(this.steamClient, true, true); // todo remove second true
+        this.dota2 = new Dota2.Dota2Client(this.steamClient, true, extraDebug); // todo remove second true
 
         this.steamClient.on("connected", () => this._onSteamConnected.call(this));
 
@@ -38,7 +38,7 @@ class Bridge extends EventEmitter {
         this.dota2.on("chatJoined", (channelData) => this._dota2ChatJoined.call(this, channelData));
         this.dota2.on("chatMessage", (channel, personaName, message, chatObject) => this._emitMessage.call(this, channel, personaName, message, chatObject));
         this.dota2.on("unhandled", (kMsg) => this._unhandled.call(this, kMsg));
-        this.dota2.on("hellotimeout", () => { this.emit("error", "dota2", "hellotimeout") });
+        this.dota2.on("hellotimeout", () => { this.emit("error", "hellotimeout", "dota2") });
     }
 
     _onSteamConnected() {
@@ -62,7 +62,7 @@ class Bridge extends EventEmitter {
     _updateMachineAuth(sentry, callback) {
         let hashedSentry = crypto.createHash("sha1").update(sentry.bytes).digest();
         fs.writeFile("sentry", hashedSentry, (err) => {
-            if (err) this.emit("error", "steam", err);
+            if (err) this.emit("error", err, "steam");
             if (!err) {
                 this.emit("debug", "new sentry file saved.");
                 callback({
