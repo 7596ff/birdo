@@ -15,6 +15,9 @@ bridge.on("debug", (debug, obj) => {
 bridge.on("message", (msg) => {
     if (msg.content) {
         let disp = `**${msg.author.name}:** ${msg.content}`;
+        if (msg.diceRoll) disp = `**${msg.author.name} rolled a die (${msg.diceRoll.roll_min} - ${msg.diceRoll.roll_max}): **${msg.diceRoll.result}**`;
+        if (msg.coinFlip) disp = `**${msg.author.name}** flipped a coin: **${msg.coinFlip.toUpperCase()}**`;
+
         client.createMessage(config.discord.channelID, disp);
     }
 });
