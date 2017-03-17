@@ -94,7 +94,30 @@ class Bridge extends EventEmitter {
 
     emitMessage(channel, personaName, message, chatObject) {
         this.emit("debug", "recieved chat object", chatObject);
-        this.emit("message", chatObject); // TRANSFORM THIS
+
+        let msg = {};
+
+        if (chatObject.hasOwnProperty("persona_name") && chatObject.hasOwnProperty("account_id"))  {
+            msg.author = {
+                "name": chatObject.persona_name,
+                "id": chatObject.account_id
+            }
+
+            if (chatObject.hasOwnProperty("event_id") && chatObject.hasOwnProperty("event_points")) {
+                msg.author.eventID = chatObject.event_id;
+                msg.author.eventPoints = chatObject.event_points;
+            }
+
+            if (chatObject.hasOwnProperty("battle_cup_streak")) msg.author.streak = chatObject.battle_cup_streak;
+            if (chatObject.hasOwnProperty("badge_level")) msg.author.level = chatObject.badge_level;
+        }
+
+        if (chatObject.hasOwnProperty("channel_id")) msg.channelID = chatObject.channel_id;
+        if (chatObject.hasOwnProperty("dice_roll")) message.diceRoll = JSON.parse(JSON.stringify(chatObject.dice_roll));
+        if (chatObject.hasOwnProperty("coin_flip")) message.coinFlip = chatObject.coinFlip ? "heads" : "tails";
+        if (chatObject.hasOwnProperty("text")) msg.content = chatObject.text;
+
+        if (msg !== {}) this.emit("message", msg);
     }
 
     connect() {
