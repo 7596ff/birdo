@@ -36,7 +36,7 @@ class Bridge extends EventEmitter {
 
         this.dota2.on("ready", () => this._dota2Ready.call(this));
         this.dota2.on("chatJoined", (channelData) => this._dota2ChatJoined.call(this, channelData));
-        this.dota2.on("chatMessage", (channel, personaName, message, chatObject) => this.emitMessage.call(this, channel, personaName, message, chatObject));
+        this.dota2.on("chatMessage", (channel, personaName, message, chatObject) => this._emitMessage.call(this, channel, personaName, message, chatObject));
         this.dota2.on("unhandled", (kMsg) => this._unhandled.call(this, kMsg));
         this.dota2.on("hellotimeout", () => { this.emit("error", "dota2", "hellotimeout") });
     }
@@ -92,7 +92,7 @@ class Bridge extends EventEmitter {
         this.dota2.sendMessage(channel, message);
     }
 
-    emitMessage(channel, personaName, message, chatObject) {
+    _emitMessage(channel, personaName, message, chatObject) {
         this.emit("debug", "recieved chat object", chatObject);
 
         let msg = {};
