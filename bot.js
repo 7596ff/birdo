@@ -4,7 +4,7 @@ const Eris = require("eris");
 const client = new Eris(config.discord.token, config.discord.options);
 
 const Bridge = require("./Bridge");
-var bridge = new Bridge(config.dota2);
+var bridge = new Bridge(config.dota2, true);
 
 bridge.on("debug", (debug, obj) => {
     console.log(debug);
