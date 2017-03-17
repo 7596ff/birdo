@@ -1,4 +1,4 @@
-const EventEmitter = require("events");
+const EventEmitter = require("events").EventEmitter;
 const fs = require("fs");
 const crypto = require("crypto");
 
@@ -7,6 +7,8 @@ const Dota2 = require("dota2");
 
 class Bridge extends EventEmitter {
     constructor(options) {
+        super();
+
         this.username = options.username;
         this.password = options.password;
         this.channelName = options.channelName;
@@ -19,22 +21,23 @@ class Bridge extends EventEmitter {
             this.sentry = null;
         }
 
-        this.steamClient = new steam.SteamClient();
-        this.steamUser = new steam.SteamUser(this.steamClient);
-        this.steamFriends = new steam.SteamFriends(this.steamClient);
-        this.dota2 = new Dota2.Dota2Client(steamClient, true, true); // todo remove second true
+        this.steamClient = new Steam.SteamClient();
+        this.steamUser = new Steam.SteamUser(this.steamClient);
+        this.steamFriends = new Steam.SteamFriends(this.steamClient);
+        this.dota2 = new Dota2.Dota2Client(this.steamClient, true, true); // todo remove second true
 
-        this.steamClient.on("connected", this._onSteamConnected);
+        this.steamClient.on("connected", () => this._onSteamConnected.call(this));
 
-        this.steamClient.on("logOnResponse", this._onSteamLogOn);
-        this.steamClient.on("loggedOff", (eresult) => { this.emit("error", "logged off from steam.") });
-        this.steamClient.on("error", (err) => { this.emit("error", "steam", err) });
+        this.steamClient.on("logOnResponse", (logonResp) => this._onSteamLogOn.call(this, logonResp));
+        this.steamClient.on("loggedOff", (eresult) => this.emit("error", "logged off from steam."));
+        this.steamClient.on("error", (err) => this.emit("error", err, "steam"));
 
-        this.steamUser.on("updateMachineAuth", this._updateMachineAuth);
+        this.steamUser.on("updateMachineAuth", (sentry, callback) => this._updateMachineAuth.call(this, sentry, callback));
 
-        this.dota2.on("ready", this._dota2Ready);
-        this.dota2.on("chatJoined", this._dota2ChatJoined);
-        this.dota2.on("unhandled", this._unhandled);
+        this.dota2.on("ready", () => this._dota2Ready.call(this));
+        this.dota2.on("chatJoined", (channelData) => this._dota2ChatJoined.call(this, channelData));
+        this.dota2.on("chatMessage", (channel, personaName, message, chatObject) => this.emitMessage.call(this, channel, personaName, message, chatObject));
+        this.dota2.on("unhandled", (kMsg) => this._unhandled.call(this, kMsg));
         this.dota2.on("hellotimeout", () => { this.emit("error", "dota2", "hellotimeout") });
     }
 
@@ -49,8 +52,8 @@ class Bridge extends EventEmitter {
 
     _onSteamLogOn(logonResp) {
         this.emit("debug", "recieved steam log on response", logonResp);
-        if (logonResp.eresult == steam.EResult.OK) {
-            this.steamFriends.setPersonaState(steam.EPersonaState.Busy);
+        if (logonResp.eresult == Steam.EResult.OK) {
+            this.steamFriends.setPersonaState(Steam.EPersonaState.Busy);
             this.steamFriends.setPersonaName(this.personaname);
             this.dota2.launch();
         }
@@ -89,7 +92,7 @@ class Bridge extends EventEmitter {
         this.dota2.sendMessage(channel, message);
     }
 
-    emitMessage(chatObject) {
+    emitMessage(channel, personaName, message, chatObject) {
         this.emit("debug", "recieved chat object", chatObject);
         this.emit("message", chatObject); // TRANSFORM THIS
     }
