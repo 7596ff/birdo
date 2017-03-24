@@ -5,9 +5,9 @@ const emojis = require("./emojis.json");
 const Eris = require("eris");
 const Bridge = require("./Bridge");
 
+let printDebug = false;
 const client = new Eris(config.discord.token);
-var bridge = new Bridge(config.dota2, true);
-let printDebug = true;
+var bridge = new Bridge(config.dota2, printDebug);
 
 client.ready = false;
 bridge.ready = false;
@@ -44,10 +44,11 @@ bridge.on("message", (msg) => {
 
         client.createMessage(config.discord.channelID, `**${author}:** ${msg.content}`);
     } else {
+        msg.content = false;
         if (msg.diceRoll) msg.content = `**${msg.author.name}** rolled a die (${msg.diceRoll.roll_min} - ${msg.diceRoll.roll_max}): **${msg.diceRoll.result}**`;
         if (msg.coinFlip) msg.content = `**${msg.author.name}** flipped a coin: **${msg.coinFlip.toUpperCase()}**`;
 
-        client.createMessage(config.discord.channelID, msg.content);
+        if (msg.content) client.createMessage(config.discord.channelID, msg.content);
     }
 });
 
