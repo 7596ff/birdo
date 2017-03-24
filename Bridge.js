@@ -38,7 +38,7 @@ class Bridge extends EventEmitter {
         this.steamClient = new Steam.SteamClient();
         this.steamUser = new Steam.SteamUser(this.steamClient);
         this.steamFriends = new Steam.SteamFriends(this.steamClient);
-        this.dota2 = new Dota2.Dota2Client(this.steamClient, true, extraDebug);
+        this.dota2 = new Dota2.Dota2Client(this.steamClient, extraDebug, extraDebug);
 
         this.steamClient.on("connected", () => this._onSteamConnected.call(this));
 
