@@ -5,6 +5,18 @@ const crypto = require("crypto");
 const Steam = require("steam");
 const Dota2 = require("dota2");
 
+class Bucket {
+    constructor(limit = 1) {
+        this.limit = limit * 1000;
+        this.things = 0;
+    }
+
+    getTimeout() {
+        this.things += 1;
+        return this.things * this.limit;
+    }
+}
+
 class Bridge extends EventEmitter {
     constructor(options, extraDebug) {
         super();
@@ -13,6 +25,8 @@ class Bridge extends EventEmitter {
         this.password = options.password;
         this.channelName = options.channelName;
         this.channelType = options.channelType;
+
+        this.bucket = new Bucket();
 
         try {
             this.sentry = fs.readFileSync("sentry");
@@ -90,7 +104,10 @@ class Bridge extends EventEmitter {
 
     sendMessage(channel, message) {
         this.emit("debug", `sending message to ${channel}`, message);
-        this.dota2.sendMessage(channel, message);
+        setTimeout(() => {
+            this.dota2.sendMessage(channel, message);
+            this.bucket.things -= 1;
+        }, this.bucket.getTimeout());
     }
 
     _emitMessage(channel, personaName, message, chatObject) {
