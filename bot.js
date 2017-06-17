@@ -173,7 +173,7 @@ function editMessage() {
         let latestEvent = eventsList[eventsList.length - 1];
 
         let rows = res.rows
-            .filter((row) => row.id && row.points && row.points[latestEvent])
+            .filter((row) => row.points && row.points[latestEvent])
             .sort((a, b) => b.points[latestEvent] - a.points[latestEvent])
             .map((row, index) => {
                 let badge = getBadge(latestEvent, row.points[latestEvent]);
