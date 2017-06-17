@@ -183,10 +183,13 @@ function editMessage() {
                 return `\`${index + 1}.\`${emojis[badge.toString()]}**${score}**: ${username}`;
             });
 
-        rows.slice(0, 25);
-        rows.unshift("**CLUB PURPLE BATTLE PASS LEADERBOARD**", `Stats from event \`${events[latestEvent].name}\``, "");
+        let post = ["**CLUB PURPLE BATTLE PASS LEADERBOARD**", `Stats from event \`${events[latestEvent].name}\``, ""];
 
-        client.editMessage(config.discord.editChannel, config.discord.editMessage, rows.join("\n"));
+        while (post.join("\n").length < 1900) {
+            post.push(rows.shift());
+        }
+
+        client.editMessage(config.discord.editChannel, config.discord.editMessage, post.join("\n"));
     });
 }
 
