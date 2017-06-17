@@ -44,6 +44,7 @@ async function updateDB(dotaid, eventID, eventPoints) {
 
         if (resUser.rows.length) {
             let user = resUser.rows[0];
+            if (!user.points) user.points = {};
             user.points[eventID] = eventPoints;
 
             await postgres.query({
@@ -93,6 +94,37 @@ bridge.on("message", (msg) => {
     return updateDB(msg.author.id.toString(), msg.author.eventID.toString(), msg.author.eventPoints);
 });
 
+const commands = {
+    link: async function(ctx) {
+        if (!ctx.options[1]) {
+            return "You haven't told me an ID!";
+        }
+
+        if (isNaN(ctx.options[1])) {
+            return "Please tell me a number!";
+        }
+
+        try {
+            let res = await postgres.query({
+                text: "UPDATE users SET id = $1 WHERE dotaid = $2;",
+                values: [ctx.message.author.id, ctx.options[1]]
+            });
+
+            if (res.rowCount == 1) return "OK :)";
+
+            await postgres.query({
+                text: "INSERT INTO users (id, dotaid) VALUES ($1, $2);",
+                values: [ctx.message.author.id, ctx.options[1]]
+            });
+
+            return "OK :)";
+        } catch (err) {
+            console.error(err);
+            return "Something went wrong, and the error has been logged. Sorry about that!";
+        }
+    }
+};
+
 client.on("messageCreate", (message) => {
     if (!message.author) return;
     if (!bridge.ready) return;
@@ -102,6 +134,29 @@ client.on("messageCreate", (message) => {
     if (message.author.id === client.user.id) return;
 
     bridge.sendMessage(config.dota2.channelName, `${message.author.username}: ${message.cleanContent}`);
+
+    if (message.content.startsWith(config.discord.prefix)) {
+        message.content = message.content.replace(config.discord.prefix, "");
+
+        let ctx = {
+            message: message,
+            options: message.content.split(" ")
+        };
+
+        if (ctx.options[0] in commands) {
+            commands[ctx.options[0]](ctx).then((response) => {
+                if (typeof response === "string") {
+                    bridge.sendMessage(config.dota2.channelName, `[BOT] ${response}`);
+                    client.createMessage(config.discord.channelID, `**[BOT]** ${response}`);
+                } else {
+                    if (response.dota) bridge.sendMessage(config.dota2.channelName, `[BOT] ${response.dota}`);
+                    if (response.discord) client.createMessage(config.discord.channelID, `**[BOT]** ${response.discord}`);
+                }
+            }).catch((err) => {
+                console.error(err);
+            });
+        }
+    }
 });
 
 bridge.on("ready", () => {
