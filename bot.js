@@ -2,10 +2,12 @@ const config = require("./config.json");
 const events = require("./events.json");
 const emojis = require("./emojis.json");
 
+const Postgres = require("pg");
 const Eris = require("eris");
 const Bridge = require("./Bridge");
 
 let printDebug = false;
+const postgres = new Postgres.Client(config.postgres);
 const client = new Eris(config.discord.token);
 var bridge = new Bridge(config.dota2, printDebug);
 
@@ -33,6 +35,40 @@ bridge.on("unhandled", (kMsg) => {
     console.log(kMsg);
 });
 
+async function updateDB(dotaid, eventID, eventPoints) {
+    try {
+        let resUser = await postgres.query({
+            text: "SELECT * FROM users WHERE dotaid = $1;",
+            values: [dotaid]
+        });
+
+        if (resUser.rows.length) {
+            let user = resUser.rows[0];
+            user.points[eventID] = eventPoints;
+
+            await postgres.query({
+                text: "UPDATE users SET points = $1 WHERE dotaid = $2;",
+                values: [user.points, dotaid]
+            });
+
+            return;
+        } else {
+            let points = {};
+            points[eventID] = eventPoints;
+
+            await postgres.query({
+                text: "INSERT INTO users (dotaid, points) VALUES ($1, $2);",
+                values: [dotaid, points]
+            });
+
+            return;
+        }
+    } catch (err) {
+        console.error(err);
+        return;
+    }
+}
+
 bridge.on("message", (msg) => {
     if (msg.content) {
         let author = msg.author.name.slice();
@@ -50,6 +86,11 @@ bridge.on("message", (msg) => {
 
         if (msg.content) client.createMessage(config.discord.channelID, msg.content);
     }
+
+    if (!msg.author) return;
+    if (!(msg.author.id && msg.author.eventID && msg.author.eventPoints)) return;
+
+    return updateDB(msg.author.id.toString(), msg.author.eventID.toString(), msg.author.eventPoints);
 });
 
 client.on("messageCreate", (message) => {
@@ -74,4 +115,13 @@ client.on("ready", () => {
     bridge.connect();
 });
 
-client.connect();
+
+postgres.connect((err) => {
+    if (err) {
+        console.error(err);
+        process.exit(1);
+    }
+
+    console.log("postgres ready.");
+    client.connect();
+});
