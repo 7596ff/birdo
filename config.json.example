@@ -1,0 +1,22 @@
+{
+    "discord": {
+        "token": "aaaaaaaaaaaaaaaaaaaaaaaaa",
+        "channelID": "11111111111111111",
+        "guildID": "11111111111111111",
+        "prefix": "/",
+        "editChannel": "11111111111111111",
+        "editMessage": "11111111111111111"
+    },
+    "dota2": {
+        "username": "1234",
+        "password": "1234",
+        "channelName": "aaaaa",
+        "channelType": 0
+    },
+    "postgres": {
+        "host": "aaaa",
+        "user": "aaaa",
+        "password": "aaaa",
+        "database": "birdo"
+    }
+}
