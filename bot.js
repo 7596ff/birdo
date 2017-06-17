@@ -5,11 +5,15 @@ const emojis = require("./emojis.json");
 const Postgres = require("pg");
 const Eris = require("eris");
 const Bridge = require("./Bridge");
+const schedule = require("node-schedule");
 
 let printDebug = false;
 const postgres = new Postgres.Client(config.postgres);
-const client = new Eris(config.discord.token);
+const client = new Eris(config.discord.token, {
+    getAllUsers: true
+});
 var bridge = new Bridge(config.dota2, printDebug);
+const tasks = {};
 
 client.ready = false;
 bridge.ready = false;
@@ -110,13 +114,17 @@ const commands = {
                 values: [ctx.message.author.id, ctx.options[1]]
             });
 
-            if (res.rowCount == 1) return "OK :)";
+            if (res.rowCount == 1) {
+                editMessage();
+                return "OK :)";
+            }
 
             await postgres.query({
                 text: "INSERT INTO users (id, dotaid) VALUES ($1, $2);",
                 values: [ctx.message.author.id, ctx.options[1]]
             });
 
+            editMessage();
             return "OK :)";
         } catch (err) {
             console.error(err);
@@ -159,9 +167,35 @@ client.on("messageCreate", (message) => {
     }
 });
 
+function editMessage() {
+    postgres.query("SELECT * FROM users;").catch((err) => console.error(err)).then((res) => {
+        let eventsList = Object.keys(events);
+        let latestEvent = eventsList[eventsList.length - 1];
+
+        let rows = res.rows
+            .filter((row) => row.id && row.points && row.points[latestEvent])
+            .sort((a, b) => b.points[latestEvent] - a.points[latestEvent])
+            .map((row, index) => {
+                let badge = getBadge(latestEvent, row.points[latestEvent]);
+                let score = Math.floor(row.points[latestEvent] / 1000) - 2;
+                let username = client.users.get(row.id) ? client.users.get(row.id).username : "`Unknown User`";
+
+                return `\`${index + 1}.\`${emojis[badge.toString()]}**${score}**: ${username}`;
+            });
+
+        rows.slice(0, 25);
+        rows.unshift("**CLUB PURPLE BATTLE PASS LEADERBOARD**", `Stats from event \`${events[latestEvent].name}\``, "");
+
+        client.editMessage(config.discord.editChannel, config.discord.editMessage, rows.join("\n"));
+    });
+}
+
 bridge.on("ready", () => {
     console.log("bridge ready.");
     bridge.ready = true;
+
+    editMessage();
+    tasks.edit = schedule.scheduleJob("0 */1 * * *", editMessage);
 });
 
 client.on("ready", () => {
