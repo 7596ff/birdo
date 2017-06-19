@@ -17,10 +17,12 @@
   },
   "homepage": "https://github.com/bippum/birdo#readme",
   "dependencies": {
+    "async": "^2.4.1",
     "dota2": "^4.2.1",
     "eris": "^0.6.0",
     "node-schedule": "^1.2.3",
     "pg": "^6.2.4",
+    "pm2": "^2.5.0",
     "steam": "^1.4.0"
   }
 }

@@ -23,15 +23,17 @@ class Bridge extends EventEmitter {
 
         this.username = options.username;
         this.password = options.password;
+        this.steamGuard = options.steamGuard;
         this.channelName = options.channelName;
         this.channelType = options.channelType;
+        this.sentryName = "sentry_" + options.username;
 
         this.bucket = new Bucket();
 
         try {
-            this.sentry = fs.readFileSync("sentry");
+            this.sentry = fs.readFileSync(this.sentryName);
         } catch (err) {
-            fs.closeSync(fs.openSync("sentry", "w"));
+            fs.closeSync(fs.openSync(this.sentryName, "w"));
             this.sentry = null;
         }
 
@@ -75,7 +77,7 @@ class Bridge extends EventEmitter {
 
     _updateMachineAuth(sentry, callback) {
         let hashedSentry = crypto.createHash("sha1").update(sentry.bytes).digest();
-        fs.writeFile("sentry", hashedSentry, (err) => {
+        fs.writeFile(this.sentryName, hashedSentry, (err) => {
             if (err) this.emit("error", err, "steam");
             if (!err) {
                 this.emit("debug", "new sentry file saved.");

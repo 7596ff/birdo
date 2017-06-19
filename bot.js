@@ -1,4 +1,14 @@
-const config = require("./config.json");
+const allConfig = require("./config.json");
+const guildID = process.argv[process.argv.length - 1];
+
+if (!allConfig.guilds[guildID]) {
+    console.error("Can't find guild in config!");
+    process.exit(1);
+}
+
+const config = allConfig.guilds[guildID];
+config.postgres = allConfig.postgres;
+
 const events = require("./events.json");
 const emojis = require("./emojis.json");
 
@@ -168,12 +178,14 @@ client.on("messageCreate", (message) => {
 });
 
 function editMessage() {
+    if (!config.discord.editChannel) return;
+
     postgres.query("SELECT * FROM users;").catch((err) => console.error(err)).then((res) => {
         let eventsList = Object.keys(events);
         let latestEvent = eventsList[eventsList.length - 1];
 
         let rows = res.rows
-            .filter((row) => row.points && row.points[latestEvent])
+            .filter((row) => row.points && row.points[latestEvent] && client.guilds.get(config.discord.guildID).members.get(row.id))
             .sort((a, b) => b.points[latestEvent] - a.points[latestEvent])
             .map((row, index) => {
                 let badge = getBadge(latestEvent, row.points[latestEvent]);
@@ -183,13 +195,23 @@ function editMessage() {
                 return `\`${index + 1}.\`${emojis[badge.toString()]}**${score}**: ${username}`;
             });
 
-        let post = ["**CLUB PURPLE BATTLE PASS LEADERBOARD**", `Stats from event \`${events[latestEvent].name}\``, ""];
+        let post = ["**BATTLE PASS LEADERBOARD**", `Stats from event \`${events[latestEvent].name}\``, ""];
 
         while (post.join("\n").length < 1900) {
             post.push(rows.shift());
         }
 
-        client.editMessage(config.discord.editChannel, config.discord.editMessage, post.join("\n"));
+        if (config.discord.editMessage) {
+            client.editMessage(config.discord.editChannel, config.discord.editMessage, post.join("\n")).catch((err) => {
+                console.error(err.message);
+            });
+        } else {
+            client.createMessage(config.discord.editChannel, post.join("\n")).then((msg) => {
+                config.discord.editMessage = msg.id;
+            }).catch((err) => {
+                console.error(err.message);
+            });
+        }
     });
 }
 
