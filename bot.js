@@ -38,6 +38,16 @@ function getBadge(eventID, eventPoints) {
     return false;
 }
 
+function cleanEmojis(string) {
+    let reg = /<:[a-zA-Z1-9-_]{2,}:\d{17,20}>/g;
+    while (string.match(reg)) {
+        string = string.replace(reg, (match) => {
+            return `:${match.split(":")[1]}:`;
+        });
+    }
+    return string;
+}
+
 bridge.on("debug", (debug, obj) => {
     if (!printDebug) return;
     console.log(debug);
@@ -140,6 +150,9 @@ const commands = {
             console.error(err);
             return "Something went wrong, and the error has been logged. Sorry about that!";
         }
+    },
+    invite: async function(ctx) {
+        return "heck";
     }
 };
 
@@ -151,7 +164,7 @@ client.on("messageCreate", (message) => {
     if (message.channel.id !== config.discord.channelID) return;
     if (message.author.id === client.user.id) return;
 
-    bridge.sendMessage(config.dota2.channelName, `${message.author.username}: ${message.cleanContent}`);
+    bridge.sendMessage(config.dota2.channelName, `${message.author.username}: ${cleanEmojis(message.cleanContent)}`);
 
     if (message.content.startsWith(config.discord.prefix)) {
         message.content = message.content.replace(config.discord.prefix, "");
